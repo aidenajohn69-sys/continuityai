@@ -1,1 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="ContinuityAI — organizational memory for volunteer teams that change."
+  />
+  <title>ContinuityAI — Organizational Memory</title>
 
+  <style>
+    :root {
+      --bg: #060713;
+      --panel: rgba(16, 20, 46, 0.63);
+      --panel-strong: rgba(18, 23, 56, 0.85);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f5f7ff;
+      --muted: #a9b0cf;
+      --blue: #68a3ff;
+      --cyan: #65e7ff;
+      --violet: #a78bfa;
+      --green: #62e9ab;
+      --amber: #ffc568;
+      --pink: #ff8ed8;
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 50% 0%, #141945 0%, #090b1d 35%, #060713 72%);
+      overflow-x: hidden;
+    }
+
+    button,
+    textarea,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    textarea:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(101, 231, 255, 0.75);
+      outline-offset: 3px;
+    }
+
+    .background {
+      pointer-events: none;
+      position: fixed;
+      z-index: -2;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(75px);
+      opacity: 0.48;
+      animation: drift 15s ease-in-out infinite alternate;
+    }
+
+    .blob.one {
+      width: 430px;
+      height: 430px;
+      top: -120px;
+      left: -80px;
+      background: rgba(73, 78, 255, 0.43);
+    }
+
+    .blob.two {
+      width: 380px;
+      height: 380px;
+      top: 18%;
+      right: -120px;
+      background: rgba(152, 76, 255, 0.3);
+      animation-delay: -5s;
+    }
+
+    .blob.three {
+      width: 310px;
+      height: 310px;
+      bottom: -120px;
+      left: 32%;
+      background: rgba(0, 190, 255, 0.24);
+      animation-delay: -9s;
+    }
+
+    .orb {
+      position: absolute;
+      width: 310px;
+      height: 310px;
+      right: 5%;
+      top: 76px;
+      border-radius: 50%;
+      opacity: 0.8;
+      background:
+        radial-gradient(circle at 29% 22%, rgba(255,255,255,.9) 0 2%, transparent 14%),
+        radial-gradient(circle at 67% 25%, rgba(112,235,255,.75), transparent 22%),
+        radial-gradient(circle at 45% 63%, rgba(174,112,255,.78), transparent 38%),
+        radial-gradient(circle at 70% 74%, rgba(253,133,219,.43), transparent 33%),
+        linear-gradient(140deg, rgba(255,255,255,.2), rgba(83,97,255,.09));
+      border: 1px solid rgba(255,255,255,.38);
+      box-shadow:
+        inset 20px 18px 35px rgba(255,255,255,.13),
+        inset -20px -20px 45px rgba(38, 8, 100, .45),
+        0 0 75px rgba(92, 100, 255, .4);
+      filter: saturate(1.25);
+      animation: orbFloat 9s ease-in-out infinite;
+    }
+
+    .orb::after {
+      content: "";
+      position: absolute;
+      inset: 20px;
+      border-radius: inherit;
+      border: 1px solid rgba(255,255,255,.2);
+      background: linear-gradient(130deg, rgba(255,255,255,.16), transparent 45%);
+      transform: rotate(-20deg);
+    }
+
+    @keyframes drift {
+      from { transform: translate3d(-15px, -10px, 0) scale(1); }
+      to { transform: translate3d(50px, 35px, 0) scale(1.17); }
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translateY(0) rotate(-8deg); }
+      50% { transform: translateY(22px) rotate(8deg); }
+    }
+
+    .app {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 20px 0 30px;
+    }
+
+    .glass {
+      background: linear-gradient(
+        135deg,
+        rgba(36, 42, 83, 0.68),
+        rgba(12, 15, 37, 0.61)
+      );
+      border: 1px solid var(--line);
+      border-top-color: rgba(255,255,255,.21);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.07),
+        0 20px 70px rgba(0,0,0,.25);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--radius);
+    }
+
+    header {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      position: sticky;
+      top: 12px;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon,
+    .assistant-icon {
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      background:
+        radial-gradient(circle at 30% 22%, #d5ffff, #5b8cff 35%, #5630a6 100%);
+      color: #fff;
+      box-shadow: 0 0 25px rgba(102, 183, 255, .5);
+    }
+
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      font-size: 24px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.24rem;
+      letter-spacing: -0.04em;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .online {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 13px;
+      font-size: .82rem;
+      color: #d9ffe9;
+      border-radius: 999px;
+      border: 1px solid rgba(98, 233, 171, .25);
+      background: rgba(37, 141, 93, .15);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, .88fr) minmax(0, 2.1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    aside,
+    .chat-panel {
+      padding: 20px;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .badge {
+      padding: 5px 9px;
+      color: #cbd4ff;
+      border: 1px solid rgba(129, 143, 255, .22);
+      border-radius: 999px;
+      font-size: .71rem;
+      white-space: nowrap;
+      background: rgba(84, 92, 203, .15);
+    }
+
+    .upload-zone {
+      padding: 20px 14px;
+      text-align: center;
+      border: 1.5px dashed rgba(144, 173, 255, .34);
+      border-radius: 18px;
+      background: rgba(83, 110, 255, .06);
+      transition: .25s ease;
+    }
+
+    .upload-zone.drag {
+      background: rgba(65, 220, 255, .13);
+      border-color: var(--cyan);
+      transform: translateY(-2px);
+    }
+
+    .upload-icon {
+      font-size: 28px;
+      margin-bottom: 7px;
+    }
+
+    .upload-zone strong {
+      display: block;
+      font-size: .89rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-zone p {
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.45;
+      margin: 0 auto 12px;
+      max-width: 300px;
+    }
+
+    .format {
+      color: #7f8ab2;
+      font-size: .68rem;
+      letter-spacing: .07em;
+    }
+
+    .small-button,
+    .send,
+    .reset,
+    .view-source {
+      border: 1px solid rgba(255,255,255,.14);
+      color: white;
+      background: rgba(255,255,255,.08);
+      border-radius: 12px;
+      transition: .2s ease;
+    }
+
+    .small-button {
+      margin-top: 14px;
+      padding: 9px 12px;
+      font-size: .78rem;
+    }
+
+    .small-button:hover,
+    .view-source:hover,
+    .reset:hover {
+      background: rgba(255,255,255,.15);
+      transform: translateY(-1px);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .process {
+      display: none;
+      margin-top: 13px;
+      text-align: left;
+    }
+
+    .process.active {
+      display: block;
+    }
+
+    .progress-line {
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+    }
+
+    .progress-value {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+      transition: width .55s ease;
+    }
+
+    .process-text {
+      margin-top: 8px;
+      color: #c8d0f2;
+      font-size: .74rem;
+    }
+
+    .uploaded-files {
+      margin-top: 11px;
+      text-align: left;
+    }
+
+    .file-chip {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      margin-top: 6px;
+      padding: 8px;
+      color: #c9d3f9;
+      font-size: .74rem;
+      border-radius: 9px;
+      background: rgba(255,255,255,.05);
+      overflow-wrap: anywhere;
+    }
+
+    .sources-list {
+      margin-top: 22px;
+    }
+
+    .source-mini {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .source-mini:last-child {
+      border-bottom: 0;
+    }
+
+    .source-mini-icon {
+      width: 29px;
+      height: 29px;
+      display: grid;
+      place-items: center;
+      flex: none;
+      border-radius: 9px;
+      background: rgba(109, 112, 255, .16);
+    }
+
+    .source-mini strong {
+      display: block;
+      font-size: .78rem;
+      line-height: 1.3;
+    }
+
+    .source-mini span {
+      color: var(--muted);
+      font-size: .68rem;
+    }
+
+    .privacy {
+      display: flex;
+      gap: 11px;
+      margin-top: 20px;
+      padding: 14px;
+      border: 1px solid rgba(101,231,255,.18);
+      border-radius: 16px;
+      background: rgba(55, 163, 197, .08);
+    }
+
+    .privacy div:first-child {
+      font-size: 1.2rem;
+    }
+
+    .privacy strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #c6f7ff;
+      font-size: .83rem;
+    }
+
+    .privacy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.45;
+    }
+
+    .chat-panel {
+      min-height: 700px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-title {
+      margin: 0;
+      max-width: 600px;
+      font-size: clamp(1.75rem, 3vw, 2.7rem);
+      line-height: 1.04;
+      letter-spacing: -0.055em;
+    }
+
+    .hero-title em {
+      font-style: normal;
+      background: linear-gradient(100deg, #d7fbff, #78c4ff, #bd93ff);
+      color: transparent;
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: .93rem;
+    }
+
+    .empty {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 38px 0 24px;
+      text-align: center;
+    }
+
+    .empty-inner {
+      width: min(100%, 750px);
+    }
+
+    .archive-art {
+      width: 104px;
+      height: 104px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 19px;
+      font-size: 43px;
+      border-radius: 31px;
+      border: 1px solid rgba(188, 225, 255, .34);
+      background:
+        radial-gradient(circle at 30% 28%, rgba(255,255,255,.8), transparent 10%),
+        linear-gradient(135deg, rgba(70, 223, 255, .3), rgba(117, 72, 255, .4));
+      box-shadow: 0 0 55px rgba(80, 148, 255, .3);
+    }
+
+    .empty h3 {
+      margin: 0;
+      font-size: 1.32rem;
+      letter-spacing: -.035em;
+    }
+
+    .empty p {
+      margin: 9px auto 22px;
+      color: var(--muted);
+      max-width: 500px;
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+
+    .samples {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      text-align: left;
+    }
+
+    .sample {
+      min-height: 92px;
+      padding: 15px;
+      color: #e8ebff;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 17px;
+      background: rgba(255,255,255,.055);
+      transition: .22s ease;
+    }
+
+    .sample:hover {
+      border-color: rgba(114, 190, 255, .55);
+      background: rgba(82, 139, 255, .13);
+      transform: translateY(-3px);
+    }
+
+    .sample span {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--cyan);
+      font-size: 1rem;
+    }
+
+    .sample strong {
+      font-weight: 550;
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    .messages {
+      flex: 1;
+      max-height: 650px;
+      overflow-y: auto;
+      margin: 25px -4px 12px;
+      padding: 0 4px;
+    }
+
+    .message {
+      display: flex;
+      margin: 14px 0;
+      animation: reveal .35s ease both;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: min(88%, 760px);
+      padding: 15px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.13);
+      line-height: 1.55;
+      font-size: .91rem;
+    }
+
+    .user .bubble {
+      background: linear-gradient(135deg, rgba(72, 112, 255, .4), rgba(101, 55, 196, .32));
+      border-bottom-right-radius: 5px;
+    }
+
+    .assistant .bubble {
+      background: rgba(15, 20, 48, .69);
+      border-bottom-left-radius: 5px;
+    }
+
+    .assistant-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 9px;
+      color: #a6eeff;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .assistant-icon {
+      width: 22px;
+      height: 22px;
+      font-size: .76rem;
+      border-radius: 7px;
+    }
+
+    .conflict {
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid rgba(255, 185, 80, .48);
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(255, 157, 44, .18), rgba(116, 56, 15, .14));
+    }
+
+    .conflict-title {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      margin-bottom: 13px;
+      color: #ffe0aa;
+      font-weight: 750;
+    }
+
+    .process-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .process-box {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(10, 10, 25, .28);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .process-box small {
+      display: block;
+      margin-bottom: 7px;
+      color: #d5d9ed;
+    }
+
+    .process-box p {
+      margin: 0;
+      font-size: .8rem;
+      line-height: 1.4;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 3px 7px;
+      margin-bottom: 6px;
+      border-radius: 999px;
+      font-size: .63rem;
+      font-weight: 700;
+    }
+
+    .approved {
+      color: #b8ffdb;
+      background: rgba(52, 201, 118, .16);
+      border: 1px solid rgba(83, 231, 144, .27);
+    }
+
+    .outdated {
+      color: #ffe0a0;
+      background: rgba(255, 170, 48, .14);
+      border: 1px solid rgba(255, 183, 65, .27);
+    }
+
+    .current {
+      color: #bddbff;
+      background: rgba(70, 146, 255, .16);
+      border: 1px solid rgba(96, 167, 255, .27);
+    }
+
+    .supporting {
+      color: #e2c7ff;
+      background: rgba(173, 102, 255, .16);
+      border: 1px solid rgba(184, 122, 255, .27);
+    }
+
+    .why {
+      margin: 13px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 203, 111, .18);
+      font-size: .8rem;
+    }
+
+    .why strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #ffe0aa;
+    }
+
+    .evidence-title {
+      margin: 18px 0 9px;
+      color: #d7dcff;
+      font-size: .81rem;
+      font-weight: 700;
+    }
+
+    .evidence-card {
+      margin-top: 8px;
+      border: 1px solid rgba(255,255,255,.11);
+      border-radius: 13px;
+      background: rgba(255,255,255,.045);
+      overflow: hidden;
+    }
+
+    .evidence-summary {
+      width: 100%;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 11px;
+      color: var(--text);
+      text-align: left;
+      border: 0;
+      background: transparent;
+    }
+
+    .evidence-icon {
+      margin-top: 2px;
+      font-size: 1rem;
+    }
+
+    .evidence-meta {
+      flex: 1;
+    }
+
+    .evidence-meta strong {
+      display: block;
+      font-size: .78rem;
+    }
+
+    .evidence-meta span {
+      color: var(--muted);
+      font-size: .67rem;
+    }
+
+    .evidence-body {
+      display: none;
+      padding: 0 11px 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+
+    .evidence-card.open .evidence-body {
+      display: block;
+    }
+
+    .evidence-body p {
+      margin: 10px 0;
+      color: #d6daf0;
+      font-size: .77rem;
+      line-height: 1.48;
+      white-space: pre-line;
+    }
+
+    .evidence-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .verified {
+      color: var(--cyan);
+      font-size: .66rem;
+    }
+
+    .view-source {
+      padding: 7px 9px;
+      font-size: .69rem;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: fit-content;
+      margin: 12px 0;
+      padding: 12px;
+      color: #d2dbff;
+      font-size: .8rem;
+      border-radius: 15px;
+      background: rgba(16, 22, 55, .72);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .spinner {
+      width: 17px;
+      height: 17px;
+      border: 2px solid rgba(101,231,255,.25);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+
+    .composer {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      margin-top: auto;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      background: rgba(8, 11, 29, .54);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 46px;
+      max-height: 140px;
+      padding: 11px 10px;
+      resize: vertical;
+      color: white;
+      line-height: 1.4;
+      border: 0;
+      outline: 0;
+      background: transparent;
+    }
+
+    textarea::placeholder {
+      color: #8e96b7;
+    }
+
+    .composer-actions {
+      display: flex;
+      align-items: end;
+      gap: 7px;
+    }
+
+    .send,
+    .reset {
+      height: 43px;
+      min-width: 43px;
+      padding: 0 12px;
+    }
+
+    .send {
+      color: #071322;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--cyan), #7ea2ff);
+      border: 0;
+      box-shadow: 0 5px 20px rgba(85, 204, 255, .22);
+    }
+
+    .send:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .how-it-works {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 11px;
+      padding: 17px;
+      margin-top: 18px;
+    }
+
+    .how-heading {
+      grid-column: 1 / -1;
+      margin-bottom: 2px;
+      font-size: .94rem;
+    }
+
+    .step {
+      padding: 10px;
+    }
+
+    .step i {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 8px;
+      font-style: normal;
+      border-radius: 10px;
+      background: rgba(104, 147, 255, .16);
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: .73rem;
+    }
+
+    .step span {
+      color: var(--muted);
+      font-size: .67rem;
+      line-height: 1.35;
+    }
+
+    footer {
+      padding: 20px 0 5px;
+      color: #7f88aa;
+      text-align: center;
+      font-size: .72rem;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      z-index: 100;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(2, 4, 14, .72);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-backdrop.show {
+      display: grid;
+    }
+
+    .modal {
+      width: min(690px, 100%);
+      max-height: min(720px, 90vh);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 22px;
+      background: linear-gradient(145deg, rgba(28,34,76,.96), rgba(10,13,33,.98));
+      box-shadow: 0 30px 100px rgba(0,0,0,.6);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: start;
+      padding: 17px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+
+    .modal-header h3 {
+      margin: 0 0 5px;
+      font-size: 1rem;
+    }
+
+    .modal-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: .74rem;
+    }
+
+    .close {
+      width: 35px;
+      height: 35px;
+      flex: none;
+      color: white;
+      font-size: 1.1rem;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 10px;
+      background: rgba(255,255,255,.07);
+    }
+
+    .modal-content {
+      padding: 20px;
+      overflow: auto;
+      color: #e7ebff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: .82rem;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 950px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-panel {
+        min-height: 640px;
+      }
+
+      .orb {
+        width: 210px;
+        height: 210px;
+        right: -55px;
+        top: 155px;
+        opacity: .45;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .app {
+        width: min(100% - 20px, 1440px);
+        padding-top: 10px;
+      }
+
+      header {
+        padding: 12px;
+        top: 5px;
+      }
+
+      .brand p {
+        display: none;
+      }
+
+      .online {
+        padding: 7px 9px;
+        font-size: .68rem;
+      }
+
+      aside,
+      .chat-panel {
+        padding: 15px;
+      }
+
+      .samples,
+      .how-it-works,
+      .process-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sample {
+        min-height: auto;
+      }
+
+      .bubble {
+        max-width: 96%;
+      }
+
+      .composer {
+        align-items: stretch;
+      }
+
+      .composer-actions {
+        flex-direction: column;
+      }
+
+      .send,
+      .reset {
+        min-width: 42px;
+      }
+
+      .how-it-works {
+        gap: 2px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        column-gap: 9px;
+      }
+
+      .step i {
+        grid-row: span 2;
+        margin: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background" aria-hidden="true">
+    <div class="blob one"></div>
+    <div class="blob two"></div>
+    <div class="blob three"></div>
+    <div class="orb"></div>
+  </div>
+
+  <main class="app">
+    <header class="glass">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">🧠</div>
+        <div>
+          <h1>ContinuityAI</h1>
+          <p>Organizational memory for teams that change.</p>
+        </div>
+      </div>
+
+      <div class="online">
+        <span class="dot"></span>
+        Demo knowledge base online
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="glass" aria-label="Knowledge base">
+        <div class="section-heading">
+          <h2>Knowledge Base</h2>
+          <span class="badge">6 sources indexed</span>
+        </div>
+
+        <div id="uploadZone" class="upload-zone">
+          <div class="upload-icon">☁︎</div>
+          <strong>Upload organization records</strong>
+          <p>
+            Upload checklists, chat exports, event reports, partner notes,
+            or transcripts.
+          </p>
+          <div class="format">TXT &nbsp;•&nbsp; PDF &nbsp;•&nbsp; DOCX &nbsp;•&nbsp; CSV</div>
+
+          <label class="small-button" for="fileInput">Choose files</label>
+          <input id="fileInput" type="file" multiple accept=".txt,.pdf,.doc,.docx,.csv" />
+        </div>
+
+        <div id="process" class="process" aria-live="polite">
+          <div class="progress-line"><div id="progressValue" class="progress-value"></div></div>
+          <div id="processText" class="process-text">Uploading files…</div>
+        </div>
+
+        <div id="uploadedFiles" class="uploaded-files"></div>
+
+        <div class="sources-list">
+          <div class="section-heading">
+            <h2 style="font-size:.92rem">Preloaded archive</h2>
+          </div>
+
+          <div class="source-mini">
+            <div class="source-mini-icon">📋</div>
+            <div><strong>Transport Checklist v1</strong><span>Outdated Checklist · Jan 10, 2026</span></div>
+          </div>
+          <div class="source-mini">
+            <div class="source-mini-icon">✓</div>
+            <div><strong>Transport SOP v2</strong><span>Approved Checklist · Apr 15, 2026</span></div>
+          </div>
+          <div class="source-mini">
+            <div class="source-mini-icon">💬</div>
+            <div><strong>Volunteer Chat: Cancellation</strong><span>Chat Export · Mar 20, 2026</span></div>
+          </div>
+          <div class="source-mini">
+            <div class="source-mini-icon">✉</div>
+            <div><strong>Partner Confirmation</strong><span>Partner Message · Apr 19, 2026</span></div>
+          </div>
+          <div class="source-mini">
+            <div class="source-mini-icon">📝</div>
+            <div><strong>Post-Event Lessons</strong><span>Event Report · Apr 22, 2026</span></div>
+          </div>
+          <div class="source-mini">
+            <div class="source-mini-icon">മ</div>
+            <div><strong>Malayalam Volunteer Note</strong><span>Regional-language Note · Apr 20, 2026</span></div>
+          </div>
+        </div>
+
+        <div class="privacy">
+          <div>🛡</div>
+          <div>
+            <strong>Privacy first</strong>
+            <p>Personal contact details are sanitized before organizational records are indexed.</p>
+          </div>
+        </div>
+      </aside>
+
+      <section class="chat-panel glass" aria-label="Ask the archive">
+        <div>
+          <h2 class="hero-title">Ask <em>the archive.</em></h2>
+          <p class="hero-copy">
+            Find the right process, understand why it changed, and verify every answer with the original records.
+          </p>
+        </div>
+
+        <div id="emptyState" class="empty">
+          <div class="empty-inner">
+            <div class="archive-art" aria-hidden="true">🗃</div>
+            <h3>Your organization already has the answers. Let’s find them.</h3>
+            <p>
+              Ask about previous events, checklists, partner confirmations,
+              regional-language notes, or lessons learned.
+            </p>
+
+            <div class="samples">
+              <button class="sample" data-question="Which transport checklist should we use?">
+                <span>↗</span>
+                <strong>Which transport checklist should we use?</strong>
+              </button>
+              <button class="sample" data-question="Why was the transport process changed?">
+                <span>↗</span>
+                <strong>Why was the transport process changed?</strong>
+              </button>
+              <button class="sample" data-question="What has the partner already confirmed?">
+                <span>↗</span>
+                <strong>What has the partner already confirmed?</strong>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="chatForm" class="composer">
+          <textarea
+            id="questionInput"
+            aria-label="Ask ContinuityAI a question"
+            placeholder="Ask about previous events, checklists, partner details, or lessons learned…"
+          ></textarea>
+
+          <div class="composer-actions">
+            <button id="resetButton" type="button" class="reset" title="Reset chat" aria-label="Reset chat">↺</button>
+            <button id="sendButton" type="submit" class="send" title="Send message" aria-label="Send message">↑</button>
+          </div>
+        </form>
+      </section>
+    </section>
+
+    <section class="how-it-works glass">
+      <h2 class="how-heading">How ContinuityAI works</h2>
+
+      <div class="step">
+        <i>↑</i>
+        <div><strong>1. Upload past records</strong><span>Add checklists, chats, reports, and notes.</span></div>
+      </div>
+
+      <div class="step">
+        <i>✦</i>
+        <div><strong>2. Sanitize and organize knowledge</strong><span>Personal details are removed before indexing.</span></div>
+      </div>
+
+      <div class="step">
+        <i>⌕</i>
+        <div><strong>3. Ask in natural language</strong><span>Ask what changed, what works, and why.</span></div>
+      </div>
+
+      <div class="step">
+        <i>✓</i>
+        <div><strong>4. Receive source-backed recommendations</strong><span>Every answer includes its original evidence.</span></div>
+      </div>
+    </section>
+
+    <footer>
+      Built for the Volunteer Organization With No Institutional Memory hackathon challenge.
+    </footer>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <section class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalTitle">Source document</h3>
+          <p id="modalMeta"></p>
+        </div>
+        <button id="closeModal" class="close" aria-label="Close source document">×</button>
+      </div>
+      <div id="modalContent" class="modal-content"></div>
+    </section>
+  </div>
+
+  <script>
+    const archive = {
+      transport: {
+        answer:
+          "Use the revised Transport SOP v2. Transport must be confirmed at least 10 days before the event and reconfirmed 72 hours before departure.",
+        conflictDetected: true,
+        conflictSummary:
+          "Two records disagree: the older checklist says 3 days before the event, while the revised approved checklist says 10 days.",
+        recommendationReason:
+          "The newer approved SOP was created after a cancellation caused by late confirmation.",
+        sources: [
+          {
+            icon: "✓",
+            fileName: "Transport SOP v2",
+            sourceType: "Approved Checklist",
+            date: "Apr 15, 2026",
+            status: "Approved",
+            excerpt:
+              "Transport must be confirmed at least 10 days before the event. Reconfirm with the vendor 72 hours before departure.",
+            fullContent:
+`TRANSPORT SOP v2 — APPROVED
+
+1. Contact preferred transport vendors at least 14 days before the event.
+2. Confirm the selected vendor at least 10 days before the event.
+3. Save written confirmation, vehicle details, driver contact information, and payment terms in the shared event folder.
+4. Reconfirm the booking 72 hours before departure.
+5. Maintain one backup transport vendor for every large event.
+
+This SOP replaces Transport Checklist v1.`
+          },
+          {
+            icon: "💬",
+            fileName: "Volunteer Chat: Cancellation",
+            sourceType: "Chat Export",
+            date: "Mar 20, 2026",
+            status: "Supporting context",
+            excerpt:
+              "The vendor cancelled because we confirmed too late. Please use the revised 10-day confirmation rule.",
+            fullContent:
+`[10:23 AM] Sarah: MetroTrans just cancelled our bus booking.
+[10:25 AM] Mike: What happened?
+[10:27 AM] Sarah: They said our confirmation came too late and another group had secured the vehicle.
+[10:30 AM] Priya: This happened because we followed the old 3-day checklist.
+[10:32 AM] Coordinator: New process — confirm all transport 10 days before the event and reconfirm 72 hours before departure.`
+          },
+          {
+            icon: "📋",
+            fileName: "Transport Checklist v1",
+            sourceType: "Outdated Checklist",
+            date: "Jan 10, 2026",
+            status: "Outdated",
+            excerpt: "Confirm transport at least 3 days before the event.",
+            fullContent:
+`TRANSPORT CHECKLIST v1 — OUTDATED
+
+□ Request vendor availability
+□ Confirm transport at least 3 days before the event
+□ Collect driver contact details
+□ Share departure details with volunteers
+
+Note: This checklist has been replaced by the approved Transport SOP v2.`
+          }
+        ]
+      },
+
+      change: {
+        answer:
+          "The transport process changed after a vendor cancelled at the last minute because the booking had been confirmed too late. The organization introduced a 10-day confirmation deadline and a 72-hour reconfirmation step to prevent this from happening again.",
+        conflictDetected: false,
+        sources: [
+          {
+            icon: "💬",
+            fileName: "Volunteer Chat: Cancellation",
+            sourceType: "Chat Export",
+            date: "Mar 20, 2026",
+            status: "Supporting context",
+            excerpt:
+              "The vendor cancelled because we confirmed too late. Please use the revised 10-day confirmation rule.",
+            fullContent:
+`A volunteer chat recorded that MetroTrans cancelled a booking because confirmation happened too late. The coordinator then introduced the revised 10-day confirmation rule and 72-hour reconfirmation step.`
+          },
+          {
+            icon: "📝",
+            fileName: "Post-Event Lessons",
+            sourceType: "Event Report",
+            date: "Apr 22, 2026",
+            status: "Current",
+            excerpt:
+              "Late transport confirmation caused a cancellation and disrupted volunteer participation. The 10-day rule is now mandatory.",
+            fullContent:
+`POST-EVENT LESSONS — MARCH OUTREACH
+
+Issue:
+Transport was confirmed too close to the event date. The vendor cancelled after accepting another confirmed booking.
+
+Impact:
+Several volunteers had to arrange emergency travel and the session started late.
+
+Process improvement:
+The organization adopted a mandatory 10-day transport confirmation deadline and a 72-hour reconfirmation step.`
+          }
+        ]
+      },
+
+      partner: {
+        answer:
+          "The partner organization has already confirmed that they can host the outreach session on Saturday. They need the final volunteer headcount by Thursday evening.",
+        conflictDetected: false,
+        sources: [
+          {
+            icon: "✉",
+            fileName: "Partner Confirmation",
+            sourceType: "Partner Message",
+            date: "Apr 19, 2026",
+            status: "Current",
+            excerpt:
+              "Saturday works for us. Please share the final volunteer count by Thursday evening.",
+            fullContent:
+`FROM: Community Centre Partnership Team
+SUBJECT: Saturday outreach session confirmation
+
+Hello Volunteer Team,
+
+Saturday works for us. We can host the outreach session in the main hall from 10:00 AM to 2:00 PM.
+
+Please share the final volunteer headcount by Thursday evening so our team can prepare seating and refreshments.
+
+Regards,
+Maria
+Community Centre Coordinator`
+          }
+        ]
+      },
+
+      malayalam: {
+        answer:
+          "A former volunteer’s Malayalam note says that food requirements should be collected before finalizing transport because several participants had dietary restrictions. The note has been translated and added to the organization’s searchable memory.",
+        conflictDetected: false,
+        sources: [
+          {
+            icon: "മ",
+            fileName: "Malayalam Volunteer Note",
+            sourceType: "Regional-language Note",
+            date: "Apr 20, 2026",
+            status: "Supporting context",
+            excerpt:
+              "Original: “യാത്രയും ഭക്ഷണവും ഉറപ്പാക്കുന്നതിന് മുമ്പ് എല്ലാവരുടെയും ഭക്ഷണ ആവശ്യങ്ങൾ ശേഖരിക്കുക.” Translation: “Collect everyone’s food requirements before finalizing transport and meals.”",
+            fullContent:
+`Original Malayalam note:
+യാത്രയും ഭക്ഷണവും ഉറപ്പാക്കുന്നതിന് മുമ്പ് എല്ലാവരുടെയും ഭക്ഷണ ആവശ്യങ്ങൾ ശേഖരിക്കുക. ചില സന്നദ്ധപ്രവർത്തകർക്ക് ഭക്ഷണ നിയന്ത്രണങ്ങൾ ഉണ്ടായിരുന്നു.
+
+English translation:
+Collect everyone’s food requirements before finalizing transport and meals. Some volunteers had dietary restrictions, so this should be checked early.`
+          }
+        ]
+      },
+
+      default: {
+        answer:
+          "Information not found in the available archives. Try asking about transport, partner confirmations, previous event lessons, or policy changes.",
+        conflictDetected: false,
+        sources: []
+      }
+    };
+
+    const messages = document.getElementById("messages");
+    const emptyState = document.getElementById("emptyState");
+    const questionInput = document.getElementById("questionInput");
+    const chatForm = document.getElementById("chatForm");
+    const sendButton = document.getElementById("sendButton");
+    const resetButton = document.getElementById("resetButton");
+
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMeta = document.getElementById("modalMeta");
+    const modalContent = document.getElementById("modalContent");
+
+    function chooseAnswer(query) {
+      const text = query.toLowerCase();
+
+      // Transport must come first because “checklist” and “transport” trigger it.
+      if (/(transport|bus|checklist|booking|vendor)/.test(text)) return archive.transport;
+      if (/(why|change|changed|cancellation|cancelled)/.test(text)) return archive.change;
+      if (/(partner|confirmed|host|headcount|saturday)/.test(text)) return archive.partner;
+      if (/(malayalam|regional|translation|food|meal)/.test(text)) return archive.malayalam;
+      return archive.default;
+    }
+
+    function statusClass(status) {
+      if (status === "Approved") return "approved";
+      if (status === "Outdated") return "outdated";
+      if (status === "Current") return "current";
+      return "supporting";
+    }
+
+    function addUserMessage(text) {
+      const row = document.createElement("div");
+      row.className = "message user";
+      row.innerHTML = `<div class="bubble"></div>`;
+      row.querySelector(".bubble").textContent = text;
+      messages.appendChild(row);
+      scrollMessages();
+    }
+
+    function createEvidence(source) {
+      const card = document.createElement("article");
+      card.className = "evidence-card";
+
+      const summary = document.createElement("button");
+      summary.className = "evidence-summary";
+      summary.setAttribute("type", "button");
+      summary.innerHTML = `
+        <span class="evidence-icon">${source.icon}</span>
+        <span class="evidence-meta">
+          <strong>${source.fileName}</strong>
+          <span>${source.sourceType} · ${source.date}</span>
+        </span>
+        <span class="status ${statusClass(source.status)}">${source.status}</span>
+      `;
+
+      const body = document.createElement("div");
+      body.className = "evidence-body";
+
+      const excerpt = document.createElement("p");
+      excerpt.textContent = source.excerpt;
+
+      const actions = document.createElement("div");
+      actions.className = "evidence-actions";
+      actions.innerHTML = `<span class="verified">✓ Verified archive evidence</span>`;
+
+      const viewSource = document.createElement("button");
+      viewSource.className = "view-source";
+      viewSource.type = "button";
+      viewSource.textContent = "View source";
+
+      summary.addEventListener("click", () => {
+        card.classList.toggle("open");
+      });
+
+      viewSource.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openModal(source);
+      });
+
+      actions.appendChild(viewSource);
+      body.appendChild(excerpt);
+      body.appendChild(actions);
+      card.appendChild(summary);
+      card.appendChild(body);
+      return card;
+    }
+
+    function addAssistantMessage(answerData) {
+      const row = document.createElement("div");
+      row.className = "message assistant";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      const label = document.createElement("div");
+      label.className = "assistant-label";
+      label.innerHTML = `<span class="assistant-icon">✦</span> ContinuityAI`;
+
+      const text = document.createElement("div");
+      text.textContent = answerData.answer;
+
+      bubble.appendChild(label);
+      bubble.appendChild(text);
+
+      if (answerData.conflictDetected) {
+        const alert = document.createElement("section");
+        alert.className = "conflict";
+        alert.innerHTML = `
+          <div class="conflict-title">⚠ Conflicting instructions detected</div>
+          <div class="process-grid">
+            <div class="process-box">
+              <small>Old process</small>
+              <span class="status outdated">Outdated</span>
+              <p>Confirm transport 3 days before the event.</p>
+            </div>
+            <div class="process-box">
+              <small>Recommended current process</small>
+              <span class="status approved">Approved</span>
+              <p>Confirm transport 10 days before the event and reconfirm 72 hours before departure.</p>
+            </div>
+          </div>
+          <div class="why">
+            <strong>Why this recommendation?</strong>
+            The newer approved SOP was created after a cancellation caused by late confirmation.
+          </div>
+        `;
+        bubble.appendChild(alert);
+      }
+
+      if (answerData.sources.length) {
+        const evidenceTitle = document.createElement("div");
+        evidenceTitle.className = "evidence-title";
+        evidenceTitle.textContent = "Evidence from the archive";
+        bubble.appendChild(evidenceTitle);
+
+        answerData.sources.forEach((source) => {
+          bubble.appendChild(createEvidence(source));
+        });
+      }
+
+      row.appendChild(bubble);
+      messages.appendChild(row);
+      scrollMessages();
+    }
+
+    function addLoadingMessage() {
+      const loading = document.createElement("div");
+      loading.id = "loadingMessage";
+      loading.className = "loading";
+      loading.innerHTML = `<span class="spinner"></span><span id="loadingText">Searching archived volunteer knowledge…</span>`;
+      messages.appendChild(loading);
+
+      setTimeout(() => {
+        const text = document.getElementById("loadingText");
+        if (text) text.textContent = "Comparing recent and approved sources…";
+      }, 650);
+
+      setTimeout(() => {
+        const text = document.getElementById("loadingText");
+        if (text) text.textContent = "Preparing a source-backed answer…";
+      }, 1300);
+
+      scrollMessages();
+    }
+
+    function scrollMessages() {
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function askQuestion(question) {
+      const cleanQuestion = question.trim();
+      if (!cleanQuestion) return;
+
+      emptyState.style.display = "none";
+      addUserMessage(cleanQuestion);
+      questionInput.value = "";
+      questionInput.disabled = true;
+      sendButton.disabled = true;
+      addLoadingMessage();
+
+      const result = chooseAnswer(cleanQuestion);
+
+      await new Promise(resolve => setTimeout(resolve, 1800));
+
+      document.getElementById("loadingMessage")?.remove();
+      addAssistantMessage(result);
+
+      questionInput.disabled = false;
+      sendButton.disabled = false;
+      questionInput.focus();
+    }
+
+    chatForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      askQuestion(questionInput.value);
+    });
+
+    questionInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        chatForm.requestSubmit();
+      }
+    });
+
+    document.querySelectorAll(".sample").forEach((button) => {
+      button.addEventListener("click", () => askQuestion(button.dataset.question));
+    });
+
+    resetButton.addEventListener("click", () => {
+      messages.innerHTML = "";
+      emptyState.style.display = "grid";
+      questionInput.value = "";
+      questionInput.focus();
+    });
+
+    function openModal(source) {
+      modalTitle.textContent = source.fileName;
+      modalMeta.textContent = `${source.sourceType} · ${source.date} · ${source.status}`;
+      modalContent.textContent = source.fullContent;
+      modalBackdrop.classList.add("show");
+      document.getElementById("closeModal").focus();
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove("show");
+    }
+
+    document.getElementById("closeModal").addEventListener("click", closeModal);
+
+    modalBackdrop.addEventListener("click", (event) => {
+      if (event.target === modalBackdrop) closeModal();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeModal();
+    });
+
+    // Upload simulation
+    const uploadZone = document.getElementById("uploadZone");
+    const fileInput = document.getElementById("fileInput");
+    const process = document.getElementById("process");
+    const progressValue = document.getElementById("progressValue");
+    const processText = document.getElementById("processText");
+    const uploadedFiles = document.getElementById("uploadedFiles");
+
+    function handleFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      uploadedFiles.innerHTML = "";
+      process.classList.add("active");
+
+      const steps = [
+        { progress: "25%", text: "Uploading files…" },
+        { progress: "52%", text: "Sanitizing personal information…" },
+        { progress: "80%", text: "Extracting and indexing knowledge…" },
+        { progress: "100%", text: "Ready to ask questions ✓" }
+      ];
+
+      steps.forEach((step, index) => {
+        setTimeout(() => {
+          progressValue.style.width = step.progress;
+          processText.textContent = step.text;
+
+          if (index === steps.length - 1) {
+            files.forEach((file) => {
+              const chip = document.createElement("div");
+              chip.className = "file-chip";
+              chip.textContent = `✓ ${file.name}`;
+              uploadedFiles.appendChild(chip);
+            });
+          }
+        }, index * 900);
+      });
+    }
+
+    fileInput.addEventListener("change", (event) => handleFiles(event.target.files));
+
+    ["dragenter", "dragover"].forEach((name) => {
+      uploadZone.addEventListener(name, (event) => {
+        event.preventDefault();
+        uploadZone.classList.add("drag");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((name) => {
+      uploadZone.addEventListener(name, (event) => {
+        event.preventDefault();
+        uploadZone.classList.remove("drag");
+      });
+    });
+
+    uploadZone.addEventListener("drop", (event) => {
+      handleFiles(event.dataTransfer.files);
+    });
+  </script>
+</body>
+</html>
